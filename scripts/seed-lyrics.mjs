@@ -268,8 +268,8 @@ function isMetadataLine(line) {
 
 function isCreditLine(line) {
   return (
-    /^(\[[\d:.+\-]+\]\s*)?([A-Za-z&/ .()-]+|[\u4e00-\u9fffA-Za-z&/ .()+-]{1,40})\s*[:：｜|]\s*.+$/.test(line) ||
-    /^[\u4e00-\u9fffA-Za-z&/@ .()+-]{1,40}\d?\s*[:：｜|]\s*.+$/.test(line) ||
+    /^(\[[\d:.+\-]+\]\s*)?([A-Za-z&/ .()-]+|[\u4e00-\u9fffA-Za-z&/ .()+\-、，]{1,40})\s*[:：｜|]\s*.+$/.test(line) ||
+    /^[\u4e00-\u9fffA-Za-z&/@ .()+\-、，]{1,40}\d?\s*[:：｜|]\s*.+$/.test(line) ||
     /(Studio|Recording|chorus\b|All chorus|录音助理|录音室|录音师|混音|母带后期处理|制作统筹|和声编写)/i.test(line) ||
     /^(Engineered|Mixed|Recorded|Produced|Arranged|Special Thanks|Orchestra Recorded)\b/i.test(line)
   );
