@@ -32,7 +32,7 @@ export async function getDailyPuzzle(date: string) {
   return { puzzle: toPuzzle(entry) };
 }
 
-export async function getInfinityPuzzle(authorFilter: string) {
+export async function getInfinityPuzzle(authorFilter: string, excludeId?: string) {
   const lyrics = await getLyrics();
   const authors = authorFilter
     .split(",")
@@ -48,7 +48,12 @@ export async function getInfinityPuzzle(authorFilter: string) {
     };
   }
 
-  const pick = pool[Math.floor(Math.random() * pool.length)];
+  const filteredPool =
+    excludeId && pool.length > 1
+      ? pool.filter((item) => item.id !== excludeId)
+      : pool;
+
+  const pick = filteredPool[Math.floor(Math.random() * filteredPool.length)];
   return { puzzle: toPuzzle(pick) };
 }
 

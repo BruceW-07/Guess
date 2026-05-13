@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:lyrics": "node scripts/seed-lyrics.mjs"
   },
   "dependencies": {
     "next": "15.0.4",

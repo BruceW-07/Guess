@@ -6,7 +6,7 @@ import { todayKey } from "@/lib/date";
 import { flattenParagraphs, isChineseChar, uniqueChineseChars } from "@/lib/normalize";
 import type { DailyProgress, LyricPuzzle } from "@/lib/types";
 
-type Mode = "daily" | "infinity";
+type Mode = "daily" | "random" | "author";
 
 const STORAGE_PREFIX = "lyricHistory1_";
 
@@ -23,28 +23,47 @@ function buildStorageKey(date: string, author: string) {
 }
 
 function renderChars(text: string, revealed: Set<string>, answerChars: Set<string>) {
-  return [...text].map((char, index) => {
-    if (!isChineseChar(char)) {
-      return (
-        <span key={`${char}-${index}`} className={styles.revealedChar}>
-          {char}
-        </span>
-      );
+  const nodes: React.ReactNode[] = [];
+  let plainBuffer = "";
+
+  const flushPlainBuffer = (index: number) => {
+    if (!plainBuffer) {
+      return;
     }
+
+    nodes.push(
+      <span key={`plain-${index}-${plainBuffer}`} className={styles.plainChar}>
+        {plainBuffer}
+      </span>,
+    );
+    plainBuffer = "";
+  };
+
+  [...text].forEach((char, index) => {
+    if (!isChineseChar(char)) {
+      plainBuffer += char;
+      return;
+    }
+
+    flushPlainBuffer(index);
 
     const isRevealed = revealed.has(char);
     const isTarget = answerChars.has(char);
 
-    return (
+    nodes.push(
       <span
         key={`${char}-${index}`}
         className={isRevealed ? styles.revealedChar : styles.hiddenChar}
         data-target={isTarget ? "true" : "false"}
       >
         {isRevealed ? char : ""}
-      </span>
+      </span>,
     );
   });
+
+  flushPlainBuffer(text.length);
+
+  return nodes;
 }
 
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
@@ -67,6 +86,7 @@ export function LyricPageClient() {
   const [date, setDate] = useState(todayKey());
   const [authorFilter, setAuthorFilter] = useState("");
   const [authorInput, setAuthorInput] = useState("");
+  const [round, setRound] = useState(0);
   const [authors, setAuthors] = useState<string[]>([]);
   const [puzzle, setPuzzle] = useState<LyricPuzzle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -108,10 +128,21 @@ export function LyricPageClient() {
       setMessage(null);
 
       try {
-        const url =
-          mode === "daily"
-            ? `/api/lyric/daily?date=${date}`
-            : `/api/lyric/infinity?author=${encodeURIComponent(authorFilter)}`;
+        const url = (() => {
+          if (mode === "daily") {
+            return `/api/lyric/daily?date=${date}`;
+          }
+
+          const params = new URLSearchParams({
+            author: mode === "author" ? authorFilter : "",
+          });
+
+          if (puzzle?.id) {
+            params.set("excludeId", puzzle.id);
+          }
+
+          return `/api/lyric/infinity?${params.toString()}`;
+        })();
         const nextPuzzle = await fetchJson<LyricPuzzle>(url);
         setPuzzle(nextPuzzle);
         setCorrect(false);
@@ -139,7 +170,7 @@ export function LyricPageClient() {
     };
 
     void fetchPuzzle();
-  }, [mode, date, authorFilter, activeStorageKey]);
+  }, [mode, date, authorFilter, activeStorageKey, round]);
 
   useEffect(() => {
     if (mode !== "daily" || !puzzle) {
@@ -223,9 +254,16 @@ export function LyricPageClient() {
     setMessage("成绩文案已复制。");
   };
 
-  const loadNextInfinity = () => {
-    setMode("infinity");
+  const loadRandomPuzzle = () => {
+    setMode("random");
+    setAuthorFilter("");
+    setRound((value) => value + 1);
+  };
+
+  const loadAuthorPuzzle = () => {
+    setMode("author");
     setAuthorFilter(authorInput.trim());
+    setRound((value) => value + 1);
   };
 
   return (
@@ -245,17 +283,27 @@ export function LyricPageClient() {
           <div className={styles.segment}>
             <button
               className={mode === "daily" ? styles.segmentActive : styles.segmentButton}
-              onClick={() => setMode("daily")}
+              onClick={() => {
+                setMode("daily");
+                setAuthorFilter("");
+              }}
               type="button"
             >
               每日
             </button>
             <button
-              className={mode === "infinity" ? styles.segmentActive : styles.segmentButton}
-              onClick={() => setMode("infinity")}
+              className={mode === "random" ? styles.segmentActive : styles.segmentButton}
+              onClick={loadRandomPuzzle}
               type="button"
             >
-              无限
+              随机
+            </button>
+            <button
+              className={mode === "author" ? styles.segmentActive : styles.segmentButton}
+              onClick={() => setMode("author")}
+              type="button"
+            >
+              歌手
             </button>
           </div>
 
@@ -268,6 +316,13 @@ export function LyricPageClient() {
                 onChange={(event) => setDate(fromDateInputValue(event.target.value))}
               />
             </label>
+          ) : mode === "random" ? (
+            <div className={styles.randomControls}>
+              <span>随机出题</span>
+              <button type="button" className={styles.primaryButton} onClick={loadRandomPuzzle}>
+                下一首
+              </button>
+            </div>
           ) : (
             <div className={styles.infinityControls}>
               <input
@@ -275,14 +330,14 @@ export function LyricPageClient() {
                 onChange={(event) => setAuthorInput(event.target.value)}
                 placeholder="输入歌手名，多个用逗号分隔"
               />
-              <button type="button" onClick={loadNextInfinity}>
-                开始/下一首
+              <button type="button" className={styles.primaryButton} onClick={loadAuthorPuzzle}>
+                下一首
               </button>
             </div>
           )}
         </section>
 
-        {mode === "infinity" && authors.length > 0 ? (
+        {mode === "author" && authors.length > 0 ? (
           <section className={styles.authorList}>
             <span>常用歌手</span>
             <div className={styles.chips}>
@@ -291,7 +346,12 @@ export function LyricPageClient() {
                   key={author}
                   className={styles.chip}
                   type="button"
-                  onClick={() => setAuthorInput(author)}
+                  onClick={() => {
+                    setAuthorInput(author);
+                    setAuthorFilter(author);
+                    setMode("author");
+                    setRound((value) => value + 1);
+                  }}
                 >
                   {author}
                 </button>
@@ -347,14 +407,14 @@ export function LyricPageClient() {
                       }
                     }}
                   />
-                  <button type="button" onClick={submitGuess}>
+                  <button type="button" className={styles.primaryButton} onClick={submitGuess}>
                     猜
                   </button>
                 </div>
               ) : (
                 <div className={styles.successBar}>
                   <strong>恭喜，你猜出了歌名。</strong>
-                  <button type="button" onClick={shareResult}>
+                  <button type="button" className={styles.primaryButton} onClick={shareResult}>
                     分享成绩
                   </button>
                 </div>
@@ -384,6 +444,7 @@ export function LyricPageClient() {
               </button>
               <button
                 type="button"
+                className={styles.primaryButton}
                 onClick={() => {
                   setGuessCount(restorePrompt.guessCount);
                   setRevealedSet(new Set(restorePrompt.rightSet));

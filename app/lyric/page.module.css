@@ -58,7 +58,8 @@
 .segmentButton,
 .segmentActive,
 .secondaryButton,
-.chip {
+.chip,
+.primaryButton {
   border: 0;
   cursor: pointer;
 }
@@ -78,6 +79,7 @@
 }
 
 .datePicker,
+.randomControls,
 .infinityControls {
   display: flex;
   gap: 10px;
@@ -85,6 +87,7 @@
 }
 
 .datePicker span,
+.randomControls span,
 .authorList span {
   font-size: 14px;
   color: var(--muted);
@@ -114,20 +117,16 @@
   flex: 1;
 }
 
-.toolbar button,
-.infinityControls button,
-.inputBar button,
-.modalActions button,
-.successBar button {
+.primaryButton {
   padding: 12px 18px;
-  border: 0;
   border-radius: 14px;
   background: var(--accent);
   color: white;
-  cursor: pointer;
 }
 
 .secondaryButton {
+  padding: 12px 18px;
+  border-radius: 14px;
   background: #f0e5d6 !important;
   color: var(--ink) !important;
 }
@@ -198,6 +197,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
 }
 
 .hiddenChar,
@@ -218,6 +218,15 @@
 .revealedChar {
   background: white;
   border: 1px solid rgba(36, 30, 23, 0.14);
+}
+
+.plainChar {
+  display: inline;
+  min-width: 0;
+  height: auto;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--ink);
 }
 
 .wrongGuesses {
