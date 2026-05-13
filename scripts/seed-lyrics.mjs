@@ -234,6 +234,14 @@ function isMetadataLine(line) {
   );
 }
 
+function isCreditLine(line) {
+  return (
+    /^(\[[\d:.+\-]+\]\s*)?([A-Za-z&/ .()-]+|[\u4e00-\u9fffA-Za-z&/ .()+-]{1,40})\s*[:：]\s*.+$/.test(line) ||
+    /^[\u4e00-\u9fffA-Za-z&/@ .()+-]{1,40}\d?\s*[:：]\s*.+$/.test(line) ||
+    /^(Engineered|Mixed|Recorded|Produced|Arranged|Special Thanks|Orchestra Recorded)\b/i.test(line)
+  );
+}
+
 function isStructuralNoise(line) {
   return /^(纯音乐，请欣赏|\((主歌|副歌|间奏)\)|（(主歌|副歌|间奏)）)$/i.test(line);
 }
@@ -253,9 +261,11 @@ function isNoiseLine(line, title, author) {
     !line ||
     /^[:：]+$/.test(line) ||
     isMetadataLine(line) ||
+    isCreditLine(line) ||
     isStructuralNoise(line) ||
     /^(伴奏|纯音乐|inst\.?|instrumental)$/i.test(line) ||
     /(cover|demo|remix|dj|live|版)$/i.test(line) ||
+    /^\[[\d:.+\-]+\]\s*/.test(line) ||
     titleVariants.has(normalizedLine)
   );
 }

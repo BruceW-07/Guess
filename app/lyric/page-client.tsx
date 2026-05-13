@@ -22,6 +22,10 @@ function buildStorageKey(date: string, author: string) {
   return `${STORAGE_PREFIX}${date}_${author}`;
 }
 
+function isAsciiLetter(char: string) {
+  return /^[a-z]$/i.test(char);
+}
+
 function renderChars(
   text: string,
   revealed: Set<string>,
@@ -30,6 +34,24 @@ function renderChars(
 ) {
   const nodes: React.ReactNode[] = [];
   let plainBuffer = "";
+  let wordBuffer = "";
+
+  const flushWordBuffer = (index: number) => {
+    if (!wordBuffer) {
+      return;
+    }
+
+    nodes.push(
+      <span
+        key={`word-${index}-${wordBuffer.toLowerCase()}`}
+        className={showAll ? styles.plainChar : styles.hiddenWord}
+        style={showAll ? undefined : { width: `${Math.max(wordBuffer.length, 2) * 0.8}em` }}
+      >
+        {showAll ? wordBuffer : ""}
+      </span>,
+    );
+    wordBuffer = "";
+  };
 
   const flushPlainBuffer = (index: number) => {
     if (!plainBuffer) {
@@ -45,6 +67,14 @@ function renderChars(
   };
 
   [...text].forEach((char, index) => {
+    if (isAsciiLetter(char)) {
+      flushPlainBuffer(index);
+      wordBuffer += char;
+      return;
+    }
+
+    flushWordBuffer(index);
+
     if (!isChineseChar(char)) {
       plainBuffer += char;
       return;
@@ -71,6 +101,7 @@ function renderChars(
     );
   });
 
+  flushWordBuffer(text.length);
   flushPlainBuffer(text.length);
 
   return nodes;
