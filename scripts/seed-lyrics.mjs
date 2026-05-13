@@ -261,15 +261,16 @@ async function fetchJson(url) {
 }
 
 function isMetadataLine(line) {
-  return /^(作词|作曲|编曲|制作人|制作统筹|和声|和音|和声\/和声编写|吉他|低音吉他|贝斯|鼓|钢琴|录音|混音|母带|录音助理|录音工程师|混音工程师|混音助理|录音室|混音室|统筹|企划|营销|出品|发行|监制|封面|配唱|弦乐|Program|OP|SP|Recording|Mixing|Musicians|Background Vocal|Background Vocals|Guitars?|Bass|Drum|Studio|ISRC|Producer|Engineer)(\s|[:：]|$)/i.test(
+  return /^(作词|作曲|编曲|制作人|制作统筹|和声|和音|和声\/和声编写|吉他|低音吉他|贝斯|鼓|钢琴|录音|混音|母带|录音助理|录音工程师|混音工程师|混音助理|录音室|混音室|统筹|企划|营销|出品|发行|监制|封面|配唱|弦乐|Program|OP|SP|Recording|Mixing|Musicians|Background Vocal|Background Vocals|Guitars?|Bass|Drum|Studio|ISRC|Producer|Engineer)(\s|[:：｜|]|$)/i.test(
     line,
   );
 }
 
 function isCreditLine(line) {
   return (
-    /^(\[[\d:.+\-]+\]\s*)?([A-Za-z&/ .()-]+|[\u4e00-\u9fffA-Za-z&/ .()+-]{1,40})\s*[:：]\s*.+$/.test(line) ||
-    /^[\u4e00-\u9fffA-Za-z&/@ .()+-]{1,40}\d?\s*[:：]\s*.+$/.test(line) ||
+    /^(\[[\d:.+\-]+\]\s*)?([A-Za-z&/ .()-]+|[\u4e00-\u9fffA-Za-z&/ .()+-]{1,40})\s*[:：｜|]\s*.+$/.test(line) ||
+    /^[\u4e00-\u9fffA-Za-z&/@ .()+-]{1,40}\d?\s*[:：｜|]\s*.+$/.test(line) ||
+    /(Studio|Recording|chorus\b|All chorus|录音助理|录音室|录音师|混音|母带后期处理|制作统筹|和声编写)/i.test(line) ||
     /^(Engineered|Mixed|Recorded|Produced|Arranged|Special Thanks|Orchestra Recorded)\b/i.test(line)
   );
 }
