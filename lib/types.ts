@@ -16,23 +16,6 @@ export type LyricPuzzle = {
   content: LyricContent;
 };
 
-export type ShareRecord = {
-  id: number;
-  lyricId: string;
-  description?: string;
-  successCount: number;
-  creator: {
-    userId: string;
-    userName: string;
-  };
-  createdAt: string;
-};
-
-export type WalletState = {
-  gems: number;
-  subscriptionStatus: "free" | "vip";
-};
-
 export type DailyProgress = {
   date: string;
   guessCount: number;

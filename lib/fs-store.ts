@@ -1,16 +1,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DAILY_SCHEDULE_FILE, RUNTIME_DIR, SHARE_SUCCESS_FILE, SHARES_FILE, WALLET_FILE } from "@/lib/constants";
+import { DAILY_SCHEDULE_FILE, RUNTIME_DIR } from "@/lib/constants";
 import { todayKey } from "@/lib/date";
-import { LyricEntry, ShareRecord, WalletState } from "@/lib/types";
+import { LyricEntry } from "@/lib/types";
 import seedLyrics from "@/data/seed/lyrics.json";
-
-type ShareSuccessMap = Record<string, string[]>;
-
-const defaultWallet: WalletState = {
-  gems: 3,
-  subscriptionStatus: "free",
-};
 
 async function ensureRuntimeDir() {
   await mkdir(path.resolve(RUNTIME_DIR), { recursive: true });
@@ -50,32 +43,5 @@ export async function getLyrics(): Promise<LyricEntry[]> {
 
 export async function getDailySchedule(): Promise<Record<string, string>> {
   const lyrics = await getLyrics();
-  return readJsonFile<Record<string, string>>(
-    DAILY_SCHEDULE_FILE,
-    buildDefaultSchedule(lyrics),
-  );
-}
-
-export async function getShares(): Promise<ShareRecord[]> {
-  return readJsonFile<ShareRecord[]>(SHARES_FILE, []);
-}
-
-export async function saveShares(shares: ShareRecord[]) {
-  await writeJsonFile(SHARES_FILE, shares);
-}
-
-export async function getWallet(): Promise<WalletState> {
-  return readJsonFile<WalletState>(WALLET_FILE, defaultWallet);
-}
-
-export async function saveWallet(wallet: WalletState) {
-  await writeJsonFile(WALLET_FILE, wallet);
-}
-
-export async function getShareSuccessMap(): Promise<ShareSuccessMap> {
-  return readJsonFile<ShareSuccessMap>(SHARE_SUCCESS_FILE, {});
-}
-
-export async function saveShareSuccessMap(value: ShareSuccessMap) {
-  await writeJsonFile(SHARE_SUCCESS_FILE, value);
+  return readJsonFile<Record<string, string>>(DAILY_SCHEDULE_FILE, buildDefaultSchedule(lyrics));
 }

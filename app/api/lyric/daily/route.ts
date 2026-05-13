@@ -10,11 +10,7 @@ export async function GET(request: Request) {
   if ("errorCode" in result) {
     const code = result.errorCode ?? "unknown_error";
     const message = result.errorMessage ?? "请求失败";
-    return fail(
-      code,
-      message,
-      code === "need_vip" ? 403 : 404,
-    );
+    return fail(code, message, 404);
   }
 
   return ok(result.puzzle);

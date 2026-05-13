@@ -1,28 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import styles from "./page.module.css";
 import { todayKey } from "@/lib/date";
 import { flattenParagraphs, isChineseChar, uniqueChineseChars } from "@/lib/normalize";
-import type { DailyProgress, LyricPuzzle, WalletState } from "@/lib/types";
-
-type ShareDetail = {
-  id: number;
-  lyric: LyricPuzzle;
-  description?: string;
-  successCount: number;
-  user: {
-    userId: string;
-    userName: string;
-  };
-};
-
-type SearchItem = {
-  id: string;
-  title: string;
-  author: string;
-};
+import type { DailyProgress, LyricPuzzle } from "@/lib/types";
 
 type Mode = "daily" | "infinity";
 
@@ -70,7 +52,6 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
   const data = (await response.json()) as {
     success: boolean;
     data: T | null;
-    errorCode?: string;
     errorMessage?: string;
   };
 
@@ -82,50 +63,20 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
 }
 
 export function LyricPageClient() {
-  const searchParams = useSearchParams();
-  const rawShareId = searchParams.get("shareId");
-  const shareId = rawShareId ? Number(rawShareId) : null;
-
   const [mode, setMode] = useState<Mode>("daily");
   const [date, setDate] = useState(todayKey());
   const [authorFilter, setAuthorFilter] = useState("");
   const [authorInput, setAuthorInput] = useState("");
   const [authors, setAuthors] = useState<string[]>([]);
-  const [wallet, setWallet] = useState<WalletState | null>(null);
   const [puzzle, setPuzzle] = useState<LyricPuzzle | null>(null);
-  const [shareDetail, setShareDetail] = useState<ShareDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState("");
   const [revealedSet, setRevealedSet] = useState<Set<string>>(new Set());
   const [wrongSet, setWrongSet] = useState<Set<string>>(new Set());
   const [guessCount, setGuessCount] = useState(0);
   const [correct, setCorrect] = useState(false);
-  const [vipError, setVipError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [showShareCreate, setShowShareCreate] = useState(false);
-  const [shareKeyword, setShareKeyword] = useState("");
-  const [shareSearchResults, setShareSearchResults] = useState<SearchItem[]>([]);
-  const [shareSelected, setShareSelected] = useState<SearchItem | null>(null);
-  const [shareDescription, setShareDescription] = useState("");
-  const [shareCreatedUrl, setShareCreatedUrl] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState("");
   const [restorePrompt, setRestorePrompt] = useState<DailyProgress | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const existingSession = window.localStorage.getItem("share-success-session");
-    if (existingSession) {
-      setSessionId(existingSession);
-      return;
-    }
-
-    const nextSession = crypto.randomUUID();
-    window.localStorage.setItem("share-success-session", nextSession);
-    setSessionId(nextSession);
-  }, []);
 
   const bodyCharacters = useMemo(() => {
     if (!puzzle) {
@@ -149,38 +100,11 @@ export function LyricPageClient() {
     fetchJson<string[]>("/api/lyric/authors")
       .then(setAuthors)
       .catch(() => undefined);
-
-    fetchJson<WalletState>("/api/me/wallet")
-      .then(setWallet)
-      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    if (shareId) {
-      setLoading(true);
-      fetchJson<ShareDetail>(`/api/lyric/share/${shareId}`)
-        .then((detail) => {
-          setShareDetail(detail);
-          setPuzzle(detail.lyric);
-          setCorrect(false);
-          setGuessCount(0);
-          setRevealedSet(new Set());
-          setWrongSet(new Set());
-          setVipError(null);
-          setMessage(null);
-        })
-        .catch((error: Error) => {
-          setMessage(error.message);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-      return;
-    }
-
     const fetchPuzzle = async () => {
       setLoading(true);
-      setVipError(null);
       setMessage(null);
 
       try {
@@ -203,14 +127,11 @@ export function LyricPageClient() {
               setRestorePrompt(progress);
             }
           }
+        } else {
+          setRestorePrompt(null);
         }
       } catch (error) {
-        const messageText = error instanceof Error ? error.message : "题目加载失败";
-        if (messageText.includes("会员")) {
-          setVipError(messageText);
-        } else {
-          setMessage(messageText);
-        }
+        setMessage(error instanceof Error ? error.message : "题目加载失败");
         setPuzzle(null);
       } finally {
         setLoading(false);
@@ -218,30 +139,10 @@ export function LyricPageClient() {
     };
 
     void fetchPuzzle();
-  }, [mode, date, authorFilter, shareId, activeStorageKey]);
+  }, [mode, date, authorFilter, activeStorageKey]);
 
   useEffect(() => {
-    if (!correct || !shareId || !sessionId) {
-      return;
-    }
-
-    void fetch(`/api/lyric/share/${shareId}/success`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId }),
-    }).then(async (response) => {
-      const payload = await response.json();
-      if (payload.success && shareDetail) {
-        setShareDetail({
-          ...shareDetail,
-          successCount: payload.data.successCount,
-        });
-      }
-    });
-  }, [correct, shareId, sessionId, shareDetail]);
-
-  useEffect(() => {
-    if (mode !== "daily" || shareId || !puzzle) {
+    if (mode !== "daily" || !puzzle) {
       return;
     }
 
@@ -256,9 +157,9 @@ export function LyricPageClient() {
     };
 
     window.localStorage.setItem(activeStorageKey, JSON.stringify(progress));
-  }, [mode, date, shareId, puzzle, activeStorageKey, guessCount, revealedSet, wrongSet, correct]);
+  }, [mode, date, puzzle, activeStorageKey, guessCount, revealedSet, wrongSet, correct]);
 
-  const revealSuccess = (nextRevealed: Set<string>) => {
+  const revealSuccess = (nextRevealed: Set<string>, addedGuessCount: number) => {
     if (!puzzle) {
       return;
     }
@@ -269,7 +170,7 @@ export function LyricPageClient() {
     }
 
     setCorrect(true);
-    setMessage(`恭喜猜对，当前共猜了 ${guessCount + 1} 次。`);
+    setMessage(`恭喜猜对，当前共猜了 ${addedGuessCount} 次。`);
     void fetch("/api/lyric/guess/record", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -306,92 +207,18 @@ export function LyricPageClient() {
       }
     }
 
-    setGuessCount((value) => value + freshChars.length);
+    const nextGuessCount = guessCount + freshChars.length;
+
+    setGuessCount(nextGuessCount);
     setRevealedSet(nextRevealed);
     setWrongSet(nextWrong);
     setInputValue("");
     setMessage(nextWrong.size > wrongSet.size ? "猜测的字不在歌词中。" : null);
-    revealSuccess(nextRevealed);
-  };
-
-  const useHint = async () => {
-    if (!puzzle || correct) {
-      return;
-    }
-
-    const candidates = bodyCharacters.filter(
-      (char) => !revealedSet.has(char) && !answerCharacters.has(char) && !puzzle.author.includes(char),
-    );
-
-    if (candidates.length === 0) {
-      setMessage("已经没有可揭示的正文文字了。");
-      return;
-    }
-
-    try {
-      const nextWallet = await fetchJson<WalletState>("/api/lyric/hint/consume", {
-        method: "POST",
-      });
-      setWallet(nextWallet);
-      const nextRevealed = new Set(revealedSet);
-      nextRevealed.add(candidates[Math.floor(Math.random() * candidates.length)]);
-      setRevealedSet(nextRevealed);
-      setMessage("已消耗 1 宝石并揭示一个正文文字。");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "提示失败");
-    }
-  };
-
-  const searchShareLyrics = async () => {
-    if (!shareKeyword.trim()) {
-      setShareSearchResults([]);
-      return;
-    }
-
-    try {
-      const results = await fetchJson<SearchItem[]>(
-        `/api/lyric/share/search?q=${encodeURIComponent(shareKeyword.trim())}`,
-      );
-      setShareSearchResults(results);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "搜索失败");
-    }
-  };
-
-  const createShare = async () => {
-    if (!shareSelected) {
-      setMessage("请先选择一首歌。");
-      return;
-    }
-
-    try {
-      const result = await fetchJson<{ shareId: number }>("/api/lyric/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lyricId: shareSelected.id,
-          description: shareDescription.trim() || undefined,
-        }),
-      });
-
-      const url = `${window.location.origin}/lyric?shareId=${result.shareId}`;
-      setShareCreatedUrl(url);
-      await navigator.clipboard.writeText(url);
-      setMessage("分享链接已生成并复制。");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "创建分享失败");
-    }
+    revealSuccess(nextRevealed, nextGuessCount);
   };
 
   const shareResult = async () => {
-    if (!puzzle) {
-      return;
-    }
-
-    const resultText = shareId
-      ? `「歌词猜谜」出题挑战\n猜测 ${guessCount} 次\n${window.location.origin}/lyric?shareId=${shareId}`
-      : `「歌词猜谜」${date}\n猜测 ${guessCount} 次\n${window.location.origin}/lyric`;
-
+    const resultText = `「歌词猜谜」${date}\n猜测 ${guessCount} 次\n${window.location.origin}/lyric`;
     await navigator.clipboard.writeText(resultText);
     setMessage("成绩文案已复制。");
   };
@@ -406,68 +233,56 @@ export function LyricPageClient() {
       <section className={styles.shell}>
         <header className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>{shareId ? "分享挑战" : "每日歌词挑战"}</p>
+            <p className={styles.eyebrow}>每日歌词挑战</p>
             <h1 className={styles.title}>歌词猜谜</h1>
             <p className={styles.desc}>
-              {shareId
-                ? "猜出第一行歌名即可通关。"
-                : "每天北京时间 0 点更新；每次可提交 1 到 10 个汉字，猜出歌名即可通关。"}
+              每天北京时间 0 点更新；也可以切到无限模式随机抽题。每次可提交 1 到 10 个汉字，猜出歌名即可通关。
             </p>
-          </div>
-          <div className={styles.wallet}>
-            <span>宝石 {wallet?.gems ?? "-"}</span>
-            <span>会员 {wallet?.subscriptionStatus === "vip" ? "已开通" : "未开通"}</span>
           </div>
         </header>
 
-        {!shareId && (
-          <section className={styles.toolbar}>
-            <div className={styles.segment}>
-              <button
-                className={mode === "daily" ? styles.segmentActive : styles.segmentButton}
-                onClick={() => setMode("daily")}
-                type="button"
-              >
-                每日
-              </button>
-              <button
-                className={mode === "infinity" ? styles.segmentActive : styles.segmentButton}
-                onClick={() => setMode("infinity")}
-                type="button"
-              >
-                无限
+        <section className={styles.toolbar}>
+          <div className={styles.segment}>
+            <button
+              className={mode === "daily" ? styles.segmentActive : styles.segmentButton}
+              onClick={() => setMode("daily")}
+              type="button"
+            >
+              每日
+            </button>
+            <button
+              className={mode === "infinity" ? styles.segmentActive : styles.segmentButton}
+              onClick={() => setMode("infinity")}
+              type="button"
+            >
+              无限
+            </button>
+          </div>
+
+          {mode === "daily" ? (
+            <label className={styles.datePicker}>
+              <span>日期</span>
+              <input
+                type="date"
+                value={toDateInputValue(date)}
+                onChange={(event) => setDate(fromDateInputValue(event.target.value))}
+              />
+            </label>
+          ) : (
+            <div className={styles.infinityControls}>
+              <input
+                value={authorInput}
+                onChange={(event) => setAuthorInput(event.target.value)}
+                placeholder="输入歌手名，多个用逗号分隔"
+              />
+              <button type="button" onClick={loadNextInfinity}>
+                开始/下一首
               </button>
             </div>
+          )}
+        </section>
 
-            {mode === "daily" ? (
-              <label className={styles.datePicker}>
-                <span>日期</span>
-                <input
-                  type="date"
-                  value={toDateInputValue(date)}
-                  onChange={(event) => setDate(fromDateInputValue(event.target.value))}
-                />
-              </label>
-            ) : (
-              <div className={styles.infinityControls}>
-                <input
-                  value={authorInput}
-                  onChange={(event) => setAuthorInput(event.target.value)}
-                  placeholder="输入歌手名，多个用逗号分隔"
-                />
-                <button type="button" onClick={loadNextInfinity}>
-                  开始/下一首
-                </button>
-              </div>
-            )}
-
-            <button className={styles.secondaryButton} type="button" onClick={() => setShowShareCreate(true)}>
-              出题分享
-            </button>
-          </section>
-        )}
-
-        {mode === "infinity" && !shareId && authors.length > 0 && (
+        {mode === "infinity" && authors.length > 0 ? (
           <section className={styles.authorList}>
             <span>常用歌手</span>
             <div className={styles.chips}>
@@ -483,17 +298,8 @@ export function LyricPageClient() {
               ))}
             </div>
           </section>
-        )}
+        ) : null}
 
-        {shareDetail && (
-          <section className={styles.shareMeta}>
-            <p>创建者：{shareDetail.user.userName}</p>
-            {shareDetail.description ? <p>提示：{shareDetail.description}</p> : null}
-            <p>已有 {shareDetail.successCount} 人猜对</p>
-          </section>
-        )}
-
-        {vipError ? <div className={styles.vipNotice}>{vipError}</div> : null}
         {message ? <div className={styles.message}>{message}</div> : null}
 
         <section className={styles.board}>
@@ -525,9 +331,7 @@ export function LyricPageClient() {
               </div>
 
               {wrongSet.size > 0 ? (
-                <div className={styles.wrongGuesses}>
-                  猜错的字：{[...wrongSet].join("、")}
-                </div>
+                <div className={styles.wrongGuesses}>猜错的字：{[...wrongSet].join("、")}</div>
               ) : null}
 
               {!correct ? (
@@ -546,11 +350,6 @@ export function LyricPageClient() {
                   <button type="button" onClick={submitGuess}>
                     猜
                   </button>
-                  {mode === "infinity" && !shareId ? (
-                    <button type="button" className={styles.secondaryButton} onClick={useHint}>
-                      提示(1宝石)
-                    </button>
-                  ) : null}
                 </div>
               ) : (
                 <div className={styles.successBar}>
@@ -594,70 +393,6 @@ export function LyricPageClient() {
                 }}
               >
                 恢复
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showShareCreate ? (
-        <div className={styles.overlay}>
-          <div className={styles.modalWide}>
-            <div className={styles.modalHeader}>
-              <h3>出题分享</h3>
-              <button type="button" className={styles.closeButton} onClick={() => setShowShareCreate(false)}>
-                关闭
-              </button>
-            </div>
-            <p className={styles.modalText}>按歌名或歌手搜索一首歌，生成分享链接给朋友猜。</p>
-            <div className={styles.shareSearchRow}>
-              <input
-                value={shareKeyword}
-                onChange={(event) => setShareKeyword(event.target.value)}
-                placeholder="例如：稻香 / 周杰伦"
-              />
-              <button type="button" onClick={searchShareLyrics}>
-                搜索
-              </button>
-            </div>
-
-            <div className={styles.searchList}>
-              {shareSearchResults.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={
-                    shareSelected?.id === item.id ? styles.searchItemActive : styles.searchItem
-                  }
-                  onClick={() => setShareSelected(item)}
-                >
-                  <strong>{item.title}</strong>
-                  <span>{item.author}</span>
-                </button>
-              ))}
-            </div>
-
-            <textarea
-              value={shareDescription}
-              onChange={(event) => setShareDescription(event.target.value)}
-              maxLength={100}
-              rows={3}
-              placeholder="可选提示，最多 100 字"
-            />
-
-            {shareCreatedUrl ? (
-              <div className={styles.shareCreatedBox}>
-                <span>已生成：</span>
-                <code>{shareCreatedUrl}</code>
-              </div>
-            ) : null}
-
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setShowShareCreate(false)}>
-                取消
-              </button>
-              <button type="button" onClick={createShare}>
-                创建并复制
               </button>
             </div>
           </div>

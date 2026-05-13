@@ -15,7 +15,6 @@
 
 .header {
   display: flex;
-  justify-content: space-between;
   gap: 24px;
   align-items: flex-start;
 }
@@ -41,17 +40,6 @@
   line-height: 1.6;
 }
 
-.wallet {
-  display: grid;
-  gap: 8px;
-  min-width: 140px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(233, 178, 104, 0.24), rgba(197, 93, 45, 0.14));
-  color: var(--ink);
-  font-size: 14px;
-}
-
 .toolbar {
   display: flex;
   gap: 14px;
@@ -70,10 +58,7 @@
 .segmentButton,
 .segmentActive,
 .secondaryButton,
-.chip,
-.searchItem,
-.searchItemActive,
-.closeButton {
+.chip {
   border: 0;
   cursor: pointer;
 }
@@ -107,9 +92,7 @@
 
 .datePicker input,
 .infinityControls input,
-.shareSearchRow input,
-.inputBar input,
-.modalWide textarea {
+.inputBar input {
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
@@ -118,7 +101,6 @@
 
 .datePicker input,
 .infinityControls input,
-.shareSearchRow input,
 .inputBar input {
   padding: 12px 14px;
 }
@@ -128,14 +110,12 @@
 }
 
 .infinityControls input,
-.shareSearchRow input,
 .inputBar input {
   flex: 1;
 }
 
 .toolbar button,
 .infinityControls button,
-.shareSearchRow button,
 .inputBar button,
 .modalActions button,
 .successBar button {
@@ -147,8 +127,7 @@
   cursor: pointer;
 }
 
-.secondaryButton,
-.closeButton {
+.secondaryButton {
   background: #f0e5d6 !important;
   color: var(--ink) !important;
 }
@@ -172,30 +151,11 @@
   border: 1px solid var(--line);
 }
 
-.shareMeta,
-.vipNotice,
 .message {
   margin-top: 18px;
   padding: 14px 16px;
   border-radius: 16px;
   line-height: 1.6;
-}
-
-.shareMeta {
-  background: rgba(197, 93, 45, 0.08);
-}
-
-.shareMeta p,
-.vipNotice,
-.message {
-  margin: 0;
-}
-
-.vipNotice {
-  background: rgba(233, 178, 104, 0.24);
-}
-
-.message {
   background: rgba(47, 143, 87, 0.14);
 }
 
@@ -290,81 +250,12 @@
   z-index: 20;
 }
 
-.modal,
-.modalWide {
+.modal {
   width: min(520px, 100%);
   padding: 22px;
   border-radius: 24px;
   background: #fffaf4;
   box-shadow: var(--shadow);
-}
-
-.modalWide {
-  width: min(760px, 100%);
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.modalText {
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.shareSearchRow {
-  display: flex;
-  gap: 10px;
-}
-
-.searchList {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-  max-height: 260px;
-  overflow: auto;
-}
-
-.searchItem,
-.searchItemActive {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  text-align: left;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: #fff;
-  border: 1px solid var(--line);
-}
-
-.searchItemActive {
-  background: #fff1e6;
-  border-color: rgba(197, 93, 45, 0.4);
-}
-
-.modalWide textarea {
-  width: 100%;
-  margin-top: 14px;
-  padding: 12px 14px;
-  resize: vertical;
-}
-
-.shareCreatedBox {
-  display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: #f7efe2;
-}
-
-.shareCreatedBox code {
-  word-break: break-all;
-  white-space: pre-wrap;
 }
 
 .modalActions {
@@ -388,7 +279,6 @@
   .toolbar,
   .scorebar,
   .successBar,
-  .shareSearchRow,
   .inputBar {
     flex-direction: column;
     align-items: stretch;
