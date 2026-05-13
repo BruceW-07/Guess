@@ -130,6 +130,7 @@ export function LyricPageClient() {
   const [round, setRound] = useState(0);
   const [authors, setAuthors] = useState<string[]>([]);
   const [puzzle, setPuzzle] = useState<LyricPuzzle | null>(null);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState("");
   const [revealedSet, setRevealedSet] = useState<Set<string>>(new Set());
@@ -156,6 +157,7 @@ export function LyricPageClient() {
   }, [puzzle]);
 
   const activeStorageKey = useMemo(() => buildStorageKey(date, authorFilter), [date, authorFilter]);
+  const currentPuzzleId = puzzle?.id ?? null;
 
   useEffect(() => {
     fetchJson<string[]>("/api/lyric/authors")
@@ -167,6 +169,7 @@ export function LyricPageClient() {
     const fetchPuzzle = async () => {
       setLoading(true);
       setMessage(null);
+      setLoadedStorageKey(null);
 
       try {
         const url = (() => {
@@ -178,14 +181,15 @@ export function LyricPageClient() {
             author: mode === "author" ? authorFilter : "",
           });
 
-          if (puzzle?.id) {
-            params.set("excludeId", puzzle.id);
+          if (currentPuzzleId) {
+            params.set("excludeId", currentPuzzleId);
           }
 
           return `/api/lyric/infinity?${params.toString()}`;
         })();
         const nextPuzzle = await fetchJson<LyricPuzzle>(url);
         setPuzzle(nextPuzzle);
+        setLoadedStorageKey(mode === "daily" ? activeStorageKey : null);
         setCorrect(false);
         setGuessCount(0);
         setRevealedSet(new Set());
@@ -197,7 +201,11 @@ export function LyricPageClient() {
             const progress = JSON.parse(raw) as DailyProgress;
             if (progress.guessCount > 0) {
               setRestorePrompt(progress);
+            } else {
+              setRestorePrompt(null);
             }
+          } else {
+            setRestorePrompt(null);
           }
         } else {
           setRestorePrompt(null);
@@ -211,10 +219,10 @@ export function LyricPageClient() {
     };
 
     void fetchPuzzle();
-  }, [mode, date, authorFilter, activeStorageKey, round]);
+  }, [mode, date, authorFilter, activeStorageKey, currentPuzzleId, round]);
 
   useEffect(() => {
-    if (mode !== "daily" || !puzzle) {
+    if (mode !== "daily" || !puzzle || loadedStorageKey !== activeStorageKey) {
       return;
     }
 
@@ -229,7 +237,7 @@ export function LyricPageClient() {
     };
 
     window.localStorage.setItem(activeStorageKey, JSON.stringify(progress));
-  }, [mode, date, puzzle, activeStorageKey, guessCount, revealedSet, wrongSet, correct]);
+  }, [mode, date, puzzle, activeStorageKey, loadedStorageKey, guessCount, revealedSet, wrongSet, correct]);
 
   const revealSuccess = (nextRevealed: Set<string>, addedGuessCount: number) => {
     if (!puzzle) {
