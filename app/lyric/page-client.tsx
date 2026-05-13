@@ -22,7 +22,12 @@ function buildStorageKey(date: string, author: string) {
   return `${STORAGE_PREFIX}${date}_${author}`;
 }
 
-function renderChars(text: string, revealed: Set<string>, answerChars: Set<string>) {
+function renderChars(
+  text: string,
+  revealed: Set<string>,
+  answerChars: Set<string>,
+  showAll: boolean,
+) {
   const nodes: React.ReactNode[] = [];
   let plainBuffer = "";
 
@@ -49,14 +54,19 @@ function renderChars(text: string, revealed: Set<string>, answerChars: Set<strin
 
     const isRevealed = revealed.has(char);
     const isTarget = answerChars.has(char);
+    const className = isRevealed
+      ? styles.revealedChar
+      : showAll
+        ? styles.completedChar
+        : styles.hiddenChar;
 
     nodes.push(
       <span
         key={`${char}-${index}`}
-        className={isRevealed ? styles.revealedChar : styles.hiddenChar}
+        className={className}
         data-target={isTarget ? "true" : "false"}
       >
-        {isRevealed ? char : ""}
+        {isRevealed || showAll ? char : ""}
       </span>,
     );
   });
@@ -374,16 +384,16 @@ export function LyricPageClient() {
 
               <div className={styles.lyricBlock}>
                 <div className={styles.line}>
-                  {renderChars(puzzle.title, revealedSet, answerCharacters)}
+                  {renderChars(puzzle.title, revealedSet, answerCharacters, correct)}
                 </div>
                 <div className={styles.line}>
-                  {renderChars(puzzle.author, revealedSet, answerCharacters)}
+                  {renderChars(puzzle.author, revealedSet, answerCharacters, correct)}
                 </div>
                 {puzzle.content.paragraphs.map((group, index) => (
                   <div className={styles.paragraph} key={`${puzzle.id}-${index}`}>
                     {group.map((line, lineIndex) => (
                       <div className={styles.line} key={`${line}-${lineIndex}`}>
-                        {renderChars(line, revealedSet, answerCharacters)}
+                        {renderChars(line, revealedSet, answerCharacters, correct)}
                       </div>
                     ))}
                   </div>

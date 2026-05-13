@@ -201,7 +201,8 @@
 }
 
 .hiddenChar,
-.revealedChar {
+.revealedChar,
+.completedChar {
   width: 36px;
   height: 36px;
   border-radius: 12px;
@@ -218,6 +219,12 @@
 .revealedChar {
   background: white;
   border: 1px solid rgba(36, 30, 23, 0.14);
+}
+
+.completedChar {
+  background: rgba(233, 178, 104, 0.24);
+  border: 1px dashed rgba(197, 93, 45, 0.4);
+  color: rgba(36, 30, 23, 0.78);
 }
 
 .plainChar {

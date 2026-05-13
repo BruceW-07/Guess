@@ -15,6 +15,11 @@ npm run dev
 
 打开 `http://localhost:3000/lyric`。
 
+## Repository
+
+- Local path: `/home/ttt/Projects`
+- Remote: `git@github.com:BruceW-07/Guess.git`
+
 ## Notes
 
 - 数据源使用 `data/seed/lyrics.json` 示例歌词，不包含真实版权接入。
