@@ -128,6 +128,7 @@ export function LyricPageClient() {
   const [authorFilter, setAuthorFilter] = useState("");
   const [authorInput, setAuthorInput] = useState("");
   const [round, setRound] = useState(0);
+  const [excludeId, setExcludeId] = useState<string | null>(null);
   const [authors, setAuthors] = useState<string[]>([]);
   const [puzzle, setPuzzle] = useState<LyricPuzzle | null>(null);
   const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
@@ -157,7 +158,6 @@ export function LyricPageClient() {
   }, [puzzle]);
 
   const activeStorageKey = useMemo(() => buildStorageKey(date, authorFilter), [date, authorFilter]);
-  const currentPuzzleId = puzzle?.id ?? null;
 
   useEffect(() => {
     fetchJson<string[]>("/api/lyric/authors")
@@ -181,8 +181,8 @@ export function LyricPageClient() {
             author: mode === "author" ? authorFilter : "",
           });
 
-          if (currentPuzzleId) {
-            params.set("excludeId", currentPuzzleId);
+          if (excludeId) {
+            params.set("excludeId", excludeId);
           }
 
           return `/api/lyric/infinity?${params.toString()}`;
@@ -219,7 +219,7 @@ export function LyricPageClient() {
     };
 
     void fetchPuzzle();
-  }, [mode, date, authorFilter, activeStorageKey, currentPuzzleId, round]);
+  }, [mode, date, authorFilter, activeStorageKey, excludeId, round]);
 
   useEffect(() => {
     if (mode !== "daily" || !puzzle || loadedStorageKey !== activeStorageKey) {
@@ -304,12 +304,14 @@ export function LyricPageClient() {
   };
 
   const loadRandomPuzzle = () => {
+    setExcludeId(puzzle?.id ?? null);
     setMode("random");
     setAuthorFilter("");
     setRound((value) => value + 1);
   };
 
   const loadAuthorPuzzle = () => {
+    setExcludeId(puzzle?.id ?? null);
     setMode("author");
     setAuthorFilter(authorInput.trim());
     setRound((value) => value + 1);
@@ -335,6 +337,7 @@ export function LyricPageClient() {
               onClick={() => {
                 setMode("daily");
                 setAuthorFilter("");
+                setExcludeId(null);
               }}
               type="button"
             >
@@ -397,6 +400,7 @@ export function LyricPageClient() {
                   type="button"
                   onClick={() => {
                     setAuthorInput(author);
+                    setExcludeId(puzzle?.id ?? null);
                     setAuthorFilter(author);
                     setMode("author");
                     setRound((value) => value + 1);
