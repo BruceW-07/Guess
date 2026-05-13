@@ -1,0 +1,8 @@
+.next
+node_modules
+dist
+npm-debug.log*
+.DS_Store
+data/runtime
+tsconfig.tsbuildinfo
+vendor
