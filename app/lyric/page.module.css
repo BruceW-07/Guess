@@ -227,6 +227,15 @@
   color: rgba(36, 30, 23, 0.78);
 }
 
+.hiddenWord {
+  height: 36px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e4d8c5;
+}
+
 .plainChar {
   display: inline;
   min-width: 0;

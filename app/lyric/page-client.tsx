@@ -22,6 +22,10 @@ function buildStorageKey(date: string, author: string) {
   return `${STORAGE_PREFIX}${date}_${author}`;
 }
 
+function isAsciiLetter(char: string) {
+  return /^[a-z]$/i.test(char);
+}
+
 function renderChars(
   text: string,
   revealed: Set<string>,
@@ -30,6 +34,24 @@ function renderChars(
 ) {
   const nodes: React.ReactNode[] = [];
   let plainBuffer = "";
+  let wordBuffer = "";
+
+  const flushWordBuffer = (index: number) => {
+    if (!wordBuffer) {
+      return;
+    }
+
+    nodes.push(
+      <span
+        key={`word-${index}-${wordBuffer.toLowerCase()}`}
+        className={showAll ? styles.plainChar : styles.hiddenWord}
+        style={showAll ? undefined : { width: `${Math.max(wordBuffer.length, 2) * 0.8}em` }}
+      >
+        {showAll ? wordBuffer : ""}
+      </span>,
+    );
+    wordBuffer = "";
+  };
 
   const flushPlainBuffer = (index: number) => {
     if (!plainBuffer) {
@@ -45,6 +67,14 @@ function renderChars(
   };
 
   [...text].forEach((char, index) => {
+    if (isAsciiLetter(char)) {
+      flushPlainBuffer(index);
+      wordBuffer += char;
+      return;
+    }
+
+    flushWordBuffer(index);
+
     if (!isChineseChar(char)) {
       plainBuffer += char;
       return;
@@ -71,6 +101,7 @@ function renderChars(
     );
   });
 
+  flushWordBuffer(text.length);
   flushPlainBuffer(text.length);
 
   return nodes;
@@ -97,8 +128,10 @@ export function LyricPageClient() {
   const [authorFilter, setAuthorFilter] = useState("");
   const [authorInput, setAuthorInput] = useState("");
   const [round, setRound] = useState(0);
+  const [excludeId, setExcludeId] = useState<string | null>(null);
   const [authors, setAuthors] = useState<string[]>([]);
   const [puzzle, setPuzzle] = useState<LyricPuzzle | null>(null);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [inputValue, setInputValue] = useState("");
   const [revealedSet, setRevealedSet] = useState<Set<string>>(new Set());
@@ -136,6 +169,7 @@ export function LyricPageClient() {
     const fetchPuzzle = async () => {
       setLoading(true);
       setMessage(null);
+      setLoadedStorageKey(null);
 
       try {
         const url = (() => {
@@ -147,14 +181,15 @@ export function LyricPageClient() {
             author: mode === "author" ? authorFilter : "",
           });
 
-          if (puzzle?.id) {
-            params.set("excludeId", puzzle.id);
+          if (excludeId) {
+            params.set("excludeId", excludeId);
           }
 
           return `/api/lyric/infinity?${params.toString()}`;
         })();
         const nextPuzzle = await fetchJson<LyricPuzzle>(url);
         setPuzzle(nextPuzzle);
+        setLoadedStorageKey(mode === "daily" ? activeStorageKey : null);
         setCorrect(false);
         setGuessCount(0);
         setRevealedSet(new Set());
@@ -166,7 +201,11 @@ export function LyricPageClient() {
             const progress = JSON.parse(raw) as DailyProgress;
             if (progress.guessCount > 0) {
               setRestorePrompt(progress);
+            } else {
+              setRestorePrompt(null);
             }
+          } else {
+            setRestorePrompt(null);
           }
         } else {
           setRestorePrompt(null);
@@ -180,10 +219,10 @@ export function LyricPageClient() {
     };
 
     void fetchPuzzle();
-  }, [mode, date, authorFilter, activeStorageKey, round]);
+  }, [mode, date, authorFilter, activeStorageKey, excludeId, round]);
 
   useEffect(() => {
-    if (mode !== "daily" || !puzzle) {
+    if (mode !== "daily" || !puzzle || loadedStorageKey !== activeStorageKey) {
       return;
     }
 
@@ -198,7 +237,7 @@ export function LyricPageClient() {
     };
 
     window.localStorage.setItem(activeStorageKey, JSON.stringify(progress));
-  }, [mode, date, puzzle, activeStorageKey, guessCount, revealedSet, wrongSet, correct]);
+  }, [mode, date, puzzle, activeStorageKey, loadedStorageKey, guessCount, revealedSet, wrongSet, correct]);
 
   const revealSuccess = (nextRevealed: Set<string>, addedGuessCount: number) => {
     if (!puzzle) {
@@ -265,12 +304,14 @@ export function LyricPageClient() {
   };
 
   const loadRandomPuzzle = () => {
+    setExcludeId(puzzle?.id ?? null);
     setMode("random");
     setAuthorFilter("");
     setRound((value) => value + 1);
   };
 
   const loadAuthorPuzzle = () => {
+    setExcludeId(puzzle?.id ?? null);
     setMode("author");
     setAuthorFilter(authorInput.trim());
     setRound((value) => value + 1);
@@ -296,6 +337,7 @@ export function LyricPageClient() {
               onClick={() => {
                 setMode("daily");
                 setAuthorFilter("");
+                setExcludeId(null);
               }}
               type="button"
             >
@@ -358,6 +400,7 @@ export function LyricPageClient() {
                   type="button"
                   onClick={() => {
                     setAuthorInput(author);
+                    setExcludeId(puzzle?.id ?? null);
                     setAuthorFilter(author);
                     setMode("author");
                     setRound((value) => value + 1);

@@ -3,7 +3,7 @@ import path from "node:path";
 
 const OUTPUT_FILE = path.resolve("data/seed/lyrics.json");
 
-const TARGET_COUNT = 100;
+const TARGET_COUNT = 130;
 
 // Search/fetch flow mirrors the NetEase endpoints used by:
 // vendor/163MusicLyrics/cross-platform/MusicLyricApp/Core/Service/Music/NetEaseMusicApi.cs
@@ -11,6 +11,38 @@ const SONGS = [
   ["童话", "光良"],
   ["勇气", "梁静茹"],
   ["倒带", "蔡依林"],
+  ["小情歌", "苏打绿"],
+  ["无与伦比的美丽", "苏打绿"],
+  ["我好想你", "苏打绿"],
+  ["十年一刻", "苏打绿"],
+  ["你在烦恼什么", "苏打绿"],
+  ["当我们一起走过", "苏打绿"],
+  ["香格里拉", "魏如萱"],
+  ["你啊你啊", "魏如萱"],
+  ["还是要相信爱情啊混蛋们", "魏如萱"],
+  ["彼个所在", "魏如萱"],
+  ["买你", "魏如萱"],
+  ["晚安晚安", "魏如萱"],
+  ["门", "魏如萱"],
+  ["宝贝", "张悬"],
+  ["关于我爱你", "张悬"],
+  ["喜欢", "张悬"],
+  ["儿歌", "张悬"],
+  ["城市", "张悬"],
+  ["南国的孩子", "张悬"],
+  ["艳火", "张悬"],
+  ["情歌", "陈珊妮"],
+  ["如果有一件事是重要的", "陈珊妮"],
+  ["雨天", "陈珊妮"],
+  ["青春骊歌", "陈珊妮"],
+  ["完美落地", "陈珊妮"],
+  ["旅行的意义", "陈绮贞"],
+  ["还是会寂寞", "陈绮贞"],
+  ["太聪明", "陈绮贞"],
+  ["告诉我", "陈绮贞"],
+  ["九份的咖啡店", "陈绮贞"],
+  ["鱼", "陈绮贞"],
+  ["华丽的冒险", "陈绮贞"],
   ["突然好想你", "五月天"],
   ["夜曲", "周杰伦"],
   ["夜空中最亮的星", "逃跑计划"],
@@ -229,8 +261,17 @@ async function fetchJson(url) {
 }
 
 function isMetadataLine(line) {
-  return /^(作词|作曲|编曲|制作人|制作统筹|和声|和音|和声\/和声编写|吉他|低音吉他|贝斯|鼓|钢琴|录音|混音|母带|录音助理|录音工程师|混音工程师|混音助理|录音室|混音室|统筹|企划|营销|出品|发行|监制|封面|配唱|弦乐|Program|OP|SP|Recording|Mixing|Musicians|Background Vocal|Background Vocals|Guitars?|Bass|Drum|Studio|ISRC|Producer|Engineer)(\s|[:：]|$)/i.test(
+  return /^(作词|作曲|编曲|制作人|制作统筹|和声|和音|和声\/和声编写|吉他|低音吉他|贝斯|鼓|钢琴|录音|混音|母带|录音助理|录音工程师|混音工程师|混音助理|录音室|混音室|统筹|企划|营销|出品|发行|监制|封面|配唱|弦乐|Program|OP|SP|Recording|Mixing|Musicians|Background Vocal|Background Vocals|Guitars?|Bass|Drum|Studio|ISRC|Producer|Engineer)(\s|[:：｜|]|$)/i.test(
     line,
+  );
+}
+
+function isCreditLine(line) {
+  return (
+    /^(\[[\d:.+\-]+\]\s*)?([A-Za-z&/ .()-]+|[\u4e00-\u9fffA-Za-z&/ .()+\-、，]{1,40})\s*[:：｜|]\s*.+$/.test(line) ||
+    /^[\u4e00-\u9fffA-Za-z&/@ .()+\-、，]{1,40}\d?\s*[:：｜|]\s*.+$/.test(line) ||
+    /(Studio|Recording|chorus\b|All chorus|录音助理|录音室|录音师|混音|母带后期处理|制作统筹|和声编写)/i.test(line) ||
+    /^(Engineered|Mixed|Recorded|Produced|Arranged|Special Thanks|Orchestra Recorded)\b/i.test(line)
   );
 }
 
@@ -253,9 +294,11 @@ function isNoiseLine(line, title, author) {
     !line ||
     /^[:：]+$/.test(line) ||
     isMetadataLine(line) ||
+    isCreditLine(line) ||
     isStructuralNoise(line) ||
     /^(伴奏|纯音乐|inst\.?|instrumental)$/i.test(line) ||
     /(cover|demo|remix|dj|live|版)$/i.test(line) ||
+    /^\[[\d:.+\-]+\]\s*/.test(line) ||
     titleVariants.has(normalizedLine)
   );
 }
