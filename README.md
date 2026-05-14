@@ -19,6 +19,7 @@
 仓库现在自带自动发布工作流：
 - 推送 `v*` 标签会自动构建并上传这两个安装包
 - 也可以在 GitHub Actions 里手动触发 `Release` 工作流发版
+- macOS 发布需要先在 GitHub Actions secrets 中配置 `APPLE_ID`、`APPLE_PASSWORD`（App-Specific Password）、`APPLE_TEAM_ID`、`APPLE_CERTIFICATE`、`APPLE_CERTIFICATE_PASSWORD`、`KEYCHAIN_PASSWORD`，否则工作流会拒绝发布未签名的 `dmg`
 
 ### 方式二：自行编译
 
