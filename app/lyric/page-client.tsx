@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 import { todayKey } from "@/lib/date";
 import { flattenParagraphs, isChineseChar, uniqueChineseChars } from "@/lib/normalize";
+import { listAuthors, getDailyPuzzle, getInfinityPuzzle } from "@/lib/lyric-client";
 import type { DailyProgress, LyricPuzzle } from "@/lib/types";
 
 type Mode = "daily" | "random" | "author";
@@ -107,20 +108,7 @@ function renderChars(
   return nodes;
 }
 
-async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init);
-  const data = (await response.json()) as {
-    success: boolean;
-    data: T | null;
-    errorMessage?: string;
-  };
 
-  if (!data.success || data.data === null) {
-    throw new Error(data.errorMessage ?? "请求失败");
-  }
-
-  return data.data;
-}
 
 export function LyricPageClient() {
   const [mode, setMode] = useState<Mode>("daily");
@@ -160,9 +148,11 @@ export function LyricPageClient() {
   const activeStorageKey = useMemo(() => buildStorageKey(date, authorFilter), [date, authorFilter]);
 
   useEffect(() => {
-    fetchJson<string[]>("/api/lyric/authors")
-      .then(setAuthors)
-      .catch(() => undefined);
+    try {
+      setAuthors(listAuthors());
+    } catch {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {
@@ -172,22 +162,13 @@ export function LyricPageClient() {
       setLoadedStorageKey(null);
 
       try {
-        const url = (() => {
-          if (mode === "daily") {
-            return `/api/lyric/daily?date=${date}`;
-          }
-
-          const params = new URLSearchParams({
-            author: mode === "author" ? authorFilter : "",
-          });
-
-          if (excludeId) {
-            params.set("excludeId", excludeId);
-          }
-
-          return `/api/lyric/infinity?${params.toString()}`;
-        })();
-        const nextPuzzle = await fetchJson<LyricPuzzle>(url);
+        const nextPuzzle =
+          mode === "daily"
+            ? getDailyPuzzle(date)
+            : getInfinityPuzzle(
+                mode === "author" ? authorFilter : "",
+                excludeId ?? undefined
+              );
         setPuzzle(nextPuzzle);
         setLoadedStorageKey(mode === "daily" ? activeStorageKey : null);
         setCorrect(false);
@@ -251,11 +232,6 @@ export function LyricPageClient() {
 
     setCorrect(true);
     setMessage(`恭喜猜对，当前共猜了 ${addedGuessCount} 次。`);
-    void fetch("/api/lyric/guess/record", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: puzzle.title }),
-    });
   };
 
   const submitGuess = () => {

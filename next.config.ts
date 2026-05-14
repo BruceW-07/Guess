@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    typedRoutes: true,
+  output: "export",
+  distDir: "out",
+  images: {
+    unoptimized: true,
   },
 };
 
