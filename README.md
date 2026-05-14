@@ -4,31 +4,43 @@
 
 - 🎯 **每日挑战** — 每天一道题
 - ♾️ **无限模式** — 按歌手筛选，无限刷题
-- 💻 **桌面应用** — 基于 Tauri，Windows exe
+- 🖥️ **跨平台** — Windows / macOS（基于 Tauri，同一份代码）
 
 ---
 
 ## 🚀 安装
 
-### 方式一：下载安装包（推荐）
+### 方式一：下载安装包
 
-去 [Releases](https://github.com/BruceW-07/Guess/releases) 下载最新 `LyricQuiz_Setup.exe`，双击安装。
+去 [Releases](https://github.com/BruceW-07/Guess/releases) 下载：
+- **Windows**: `LyricQuiz_Setup.exe`
+- **macOS**: `LyricQuiz.dmg`（拖到 Applications）
 
 ### 方式二：自行编译
 
-**前置：**
-- [Node.js](https://nodejs.org) (v18+)
-- [Rust](https://rustup.rs) (stable-x86_64-pc-windows-msvc)
-- [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/)（Win10/11 通常已自带）
+#### 🪟 Windows
+
+需要 [Node.js](https://nodejs.org) + [Rust](https://rustup.rs)（MSVC 工具链）+ [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/)（Win10/11 已自带）
 
 ```bash
 git clone https://github.com/BruceW-07/Guess.git
 cd Guess
-npm install
-npx tauri build
+build.bat
 ```
 
-编译完成后，安装包在 `src-tauri\target\release\bundle\nsis\LyricQuiz_Setup.exe`。
+安装包 → `src-tauri\target\release\bundle\nsis\LyricQuiz_Setup.exe`
+
+#### 🍎 macOS
+
+需要 [Node.js](https://nodejs.org) + [Rust](https://rustup.rs) + Xcode Command Line Tools
+
+```bash
+git clone https://github.com/BruceW-07/Guess.git
+cd Guess
+./build.sh
+```
+
+输出 → `src-tauri/target/release/bundle/dmg/LyricQuiz.dmg`
 
 ---
 
@@ -36,7 +48,7 @@ npx tauri build
 
 ```bash
 npm install
-npm run dev          # 浏览器打开 http://localhost:3000/lyric
+npm run dev          # 浏览器 → http://localhost:3000/lyric
 npx tauri dev        # 桌面应用 + 热重载
 ```
 
