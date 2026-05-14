@@ -16,6 +16,10 @@
 - **Windows**: `LyricQuiz_Setup.exe`
 - **macOS**: `LyricQuiz.dmg`（拖到 Applications）
 
+仓库现在自带自动发布工作流：
+- 推送 `v*` 标签会自动构建并上传这两个安装包
+- 也可以在 GitHub Actions 里手动触发 `Release` 工作流发版
+
 ### 方式二：自行编译
 
 #### 🪟 Windows
@@ -28,7 +32,7 @@ cd Guess
 build.bat
 ```
 
-安装包 → `src-tauri\target\release\bundle\nsis\LyricQuiz_Setup.exe`
+安装包输出目录 → `src-tauri\target\release\bundle\nsis\`
 
 #### 🍎 macOS
 
@@ -40,7 +44,7 @@ cd Guess
 ./build.sh
 ```
 
-输出 → `src-tauri/target/release/bundle/dmg/LyricQuiz.dmg`
+输出目录 → `src-tauri/target/release/bundle/dmg/`
 
 ---
 
@@ -49,7 +53,10 @@ cd Guess
 ```bash
 npm install
 npm run dev          # 浏览器 → http://localhost:3000/lyric
+npm run lint         # ESLint
+npm run build        # 构建静态前端到 out/
 npx tauri dev        # 桌面应用 + 热重载
+npx tauri build      # 桌面打包
 ```
 
 ---

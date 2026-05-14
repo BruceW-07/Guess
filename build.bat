@@ -81,7 +81,7 @@ if %MISSING% equ 0 (
     )
     echo.
     echo 编译桌面应用...
-    call npx tauri build
+    call npx tauri build --bundles nsis
     if %errorlevel% neq 0 (
         echo.
         echo ===========================================

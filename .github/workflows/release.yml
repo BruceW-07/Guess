@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to create or update, e.g. v0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Windows bundle
+        run: npx tauri build --bundles nsis
+
+      - name: Rename Windows asset
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Windows installer not found" }
+          Copy-Item $installer.FullName "LyricQuiz_Setup.exe"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: LyricQuiz_Setup.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build macOS bundle
+        run: npx tauri build --bundles dmg --no-sign
+
+      - name: Rename macOS asset
+        run: |
+          dmg="$(find src-tauri/target/release/bundle/dmg -name '*.dmg' | head -n 1)"
+          if [ -z "$dmg" ]; then
+            echo "macOS dmg not found" >&2
+            exit 1
+          fi
+          cp "$dmg" LyricQuiz.dmg
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: LyricQuiz.dmg
+
+  publish:
+    needs:
+      - build-windows
+      - build-macos
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: dist
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-installer
+          path: dist
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          files: |
+            dist/LyricQuiz_Setup.exe
+            dist/LyricQuiz.dmg

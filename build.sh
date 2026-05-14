@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 BOLD="\033[1m"
 GREEN="\033[32m"
@@ -30,6 +30,12 @@ detect_os() {
 }
 
 OS=$(detect_os)
+BUILD_BUNDLE=""
+
+case "$OS" in
+    macos) BUILD_BUNDLE="dmg" ;;
+    linux) BUILD_BUNDLE="deb,appimage" ;;
+esac
 
 echo ""
 echo "=========================================="
@@ -73,7 +79,8 @@ elif [ "$OS" = "linux" ]; then
     echo -e "\n${BOLD}Linux 系统库${RESET}"
     check "webkit2gtk" pkg-config --exists webkit2gtk-4.1 2>/dev/null
     check "gtk3" pkg-config --exists gtk+-3.0 2>/dev/null
-    if [ $? -ne 0 ]; then
+    check "libsoup3" pkg-config --exists libsoup-3.0 2>/dev/null
+    if [ "$MISSING" -ne 0 ]; then
         echo -e "    安装 (Ubuntu/Debian): ${YELLOW}sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev${RESET}"
     fi
 fi
@@ -89,7 +96,11 @@ if [ "$MISSING" -eq 0 ]; then
     npm install
     echo ""
     echo "🔨 编译桌面应用..."
-    npx tauri build
+    if [ -n "$BUILD_BUNDLE" ]; then
+        npx tauri build --bundles "$BUILD_BUNDLE"
+    else
+        npx tauri build
+    fi
     echo ""
     echo "=========================================="
     echo -e "  ${GREEN}✅ 编译成功！${RESET}"
@@ -101,6 +112,9 @@ if [ "$MISSING" -eq 0 ]; then
         linux)
             echo "  Linux: src-tauri/target/release/bundle/deb/LyricQuiz.deb"
             echo "         src-tauri/target/release/bundle/appimage/LyricQuiz.AppImage"
+            ;;
+        *)
+            echo "  输出目录: src-tauri/target/release/bundle/"
             ;;
     esac
     echo "=========================================="
